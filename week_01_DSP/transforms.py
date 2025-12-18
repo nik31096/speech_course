@@ -23,25 +23,36 @@ class Windowing:
     
     def __call__(self, waveform):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
-
-        return windows
+        size = waveform.shape[0]
+        # print(waveform.shape, (waveform.shape[0] - self.window_size % 2) // self.hop_length + 1, end=' ')
+        
+        waveform = np.concatenate([
+            np.zeros(self.window_size // 2), 
+            waveform, 
+            np.zeros(self.window_size // 2)
+        ])
+        # print(self.window_size // 2, waveform)
+        
+        windows = []
+        for i in range(0, size - self.window_size % 2 + 1, self.hop_length):
+            windows.append(waveform[i: i + self.window_size])
+            # print(windows[-1])
+        
+        return np.stack(windows, axis=0)
     
 
 class Hann:
     def __init__(self, window_size=1024):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
+        self.window_size = window_size
 
     
     def __call__(self, windows):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
+        for i in range(windows.shape[0]):
+            windows[i] = windows[i] * scipy.signal.windows.hann(self.window_size, sym=False)
 
-
+        return windows
 
 class DFT:
     def __init__(self, n_freqs=None):
@@ -49,10 +60,13 @@ class DFT:
 
     def __call__(self, windows):
         # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
+        spec = []
+        for window in windows:
+            spec.append(np.fft.rfft(window))
 
-        return spec
+        out = np.absolute(np.stack(spec, axis=0)[:, :self.n_freqs])
+
+        return out
 
 
 class Square:
@@ -62,22 +76,31 @@ class Square:
 
 class Mel:
     def __init__(self, n_fft, n_mels=80, sample_rate=22050):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
-
+        self.n_fft = n_fft
+        self.n_mels = n_mels
+        self.sample_rate = sample_rate
 
     def __call__(self, spec):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
+        filter = librosa.filters.mel(
+            sr=self.sample_rate, 
+            n_fft=self.n_fft, 
+            n_mels=self.n_mels,
+            fmin=1, 
+            fmax=8192
+        )
 
-        return mel
+        return np.dot(spec, filter.T)
 
     def restore(self, mel):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
+        filter = librosa.filters.mel(
+            sr=self.sample_rate, 
+            n_fft=self.n_fft, 
+            n_mels=self.n_mels, 
+            fmin=1, 
+            fmax=8192
+        )
+        print(mel.shape, np.linalg.pinv(filter).shape)
+        spec = np.dot(mel, np.linalg.pinv(filter).T)
 
         return spec
 
@@ -132,40 +155,22 @@ class Wav2Mel:
 
 class TimeReverse:
     def __call__(self, mel):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
-
-
+        return mel[::-1]
 
 class Loudness:
     def __init__(self, loudness_factor):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
-
+        self.loundness_factor = loudness_factor
 
     def __call__(self, mel):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
-
-
-
+        return mel * self.loundness_factor
 
 class PitchUp:
     def __init__(self, num_mels_up):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
-
+        self.num_mels_up = num_mels_up
 
     def __call__(self, mel):
-        # Your code here
-        raise NotImplementedError("TODO: assignment")
-        # ^^^^^^^^^^^^^^
-
-
+        pass
+        
 
 class PitchDown:
     def __init__(self, num_mels_down):
